@@ -1,0 +1,606 @@
+image:
+  name: ubuntu-disco-x86_64
+  distribution: ubuntu
+  release: focal
+  description: |-
+    Ubuntu {{ image.release }}
+  architecture: x86_64
+
+source:
+  downloader: debootstrap
+  same_as: gutsy
+  url: http://archive.ubuntu.com/ubuntu
+  keyserver: keyserver.ubuntu.com
+  keys:
+  - 0x790BC7277767219C42C86F933B4FE6ACC0B21F32
+  - 0xf6ecb3762474eda9d21b7022871920d1991bc93c
+
+targets:
+  lxc:
+    create_message: |-
+      You just created an {{ image.description }} container.
+
+      To enable SSH, run: apt install openssh-server
+      No default root or user password are set by LXC.
+    config:
+    - type: all
+      before: 5
+      content: |-
+        lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
+
+    - type: user
+      before: 5
+      content: |-
+        lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.userns.conf
+
+    - type: all
+      after: 4
+      content: |-
+        lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+    - type: user
+      after: 4
+      content: |-
+        lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+    - type: all
+      content: |-
+        lxc.arch = {{ image.architecture_personality }}
+
+files:
+- path: /etc/hostname
+  generator: hostname
+
+- path: /etc/hosts
+  generator: hosts
+
+- path: /etc/resolvconf/resolv.conf.d/original
+  generator: remove
+
+- path: /etc/resolvconf/resolv.conf.d/tail
+  generator: remove
+
+- path: /etc/machine-id
+  generator: dump
+
+- path: /var/lib/dbus/machine-id
+  generator: remove
+
+- path: /etc/netplan/10-lxc.yaml
+  generator: dump
+  content: |-
+    network:
+      version: 2
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp-identifier: mac
+  releases:
+  - bionic
+  - focal
+  - hirsute
+  - impish
+  types:
+  - container
+  variants:
+  - default
+  - cloud
+
+- path: /etc/network/interfaces
+  generator: dump
+  content: |-
+    # This file describes the network interfaces available on your system
+    # and how to activate them. For more information, see interfaces(5).
+
+    # The loopback network interface
+    auto lo
+    iface lo inet loopback
+
+    auto eth0
+    iface eth0 inet dhcp
+
+    source /etc/network/interfaces.d/*.cfg
+  releases:
+  - xenial
+  types:
+  - container
+
+- path: /etc/netplan/10-lxc.yaml
+  generator: dump
+  content: |-
+    network:
+      version: 2
+      ethernets:
+        enp5s0:
+          dhcp4: true
+          dhcp-identifier: mac
+  releases:
+  - bionic
+  - focal
+  - hirsute
+  - impish
+  types:
+  - vm
+  variants:
+  - default
+  - desktop
+
+- path: /etc/network/interfaces
+  generator: dump
+  content: |-
+    # This file describes the network interfaces available on your system
+    # and how to activate them. For more information, see interfaces(5).
+
+    # The loopback network interface
+    auto lo
+    iface lo inet loopback
+
+    auto enp5s0
+    iface enp5s0 inet dhcp
+
+    source /etc/network/interfaces.d/*.cfg
+  releases:
+  - xenial
+  types:
+  - vm
+
+- name: meta-data
+  generator: cloud-init
+  variants:
+  - cloud
+
+- name: network-config
+  generator: cloud-init
+  variants:
+  - cloud
+
+- name: user-data
+  generator: cloud-init
+  variants:
+  - cloud
+
+- name: vendor-data
+  generator: cloud-init
+  variants:
+  - cloud
+
+- name: ext4
+  generator: fstab
+  types:
+  - vm
+
+- name: lxd-agent
+  generator: lxd-agent
+  types:
+  - vm
+
+- path: /etc/default/grub.d/50-lxd.cfg
+  generator: dump
+  content: |-
+    GRUB_RECORDFAIL_TIMEOUT=0
+    GRUB_TIMEOUT=0
+    GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} console=tty1 console=ttyS0"
+    GRUB_TERMINAL=console
+  types:
+  - vm
+
+- path: /etc/sudoers.d/90-lxd
+  generator: dump
+  mode: 0440
+  content: |-
+    # User rules for ubuntu
+    bjk ALL=(ALL) NOPASSWD:ALL
+  variants:
+    - default
+
+- path: /etc/tailscale/pat
+  generator: copy
+  source: sources/tailscale/tailscalekey
+  variants:
+    - default
+
+- path: /usr/share/library-scripts/
+  generator: copy
+  source: script-library
+  variants:
+    - default
+
+- path: /etc/provision/
+  generator: copy
+  source: sources/provision/
+  variants:
+    - default
+
+- path: /etc/sshkeys/
+  generator: copy
+  source: sources/sshkeys/
+  variants:
+    - default
+
+packages:
+  manager: apt
+  update: true
+  cleanup: true
+  sets:
+  - packages:
+    - fuse
+    - language-pack-en
+    - openssh-client
+    - sudo
+    - git
+    - build-essential
+    - wget
+    - htop
+    - curl
+    - unzip
+    - software-properties-common
+    - openssh-server
+    - tailscale
+    - apt-transport-https
+    - ca-certificates
+    - lsb-release
+    - gnupg
+    - procps
+    - file
+    action: install
+
+  - packages:
+    - cloud-init
+    - openssh-server
+    - ssh-import-id
+    action: install
+    variants:
+    - cloud
+
+  - packages:
+    - ssh-import-id
+    action: install
+    early: true
+    variants:
+    - default
+
+  - packages:
+    - acpid
+    action: install
+    architectures:
+    - amd64
+    - arm64
+    types:
+    - vm
+
+  - packages:
+    - grub-efi-amd64-signed
+    - shim-signed
+    action: install
+    architectures:
+    - amd64
+    types:
+    - vm
+
+  - packages:
+    - grub-efi-arm64-signed
+    action: install
+    architectures:
+    - arm64
+    types:
+    - vm
+
+  - packages:
+    - shim-signed
+    action: install
+    architectures:
+    - arm64
+    releases:
+    - disco
+    - eoan
+    - focal
+    - hirsute
+    - impish
+    types:
+    - vm
+
+  - packages:
+    - linux-virtual-hwe-16.04
+    action: install
+    releases:
+    - xenial
+    types:
+    - vm
+
+  - packages:
+    - linux-virtual
+    action: install
+    releases:
+    - bionic
+    - eoan
+    - focal
+    - hirsute
+    - impish
+    types:
+    - vm
+
+  - packages:
+    - os-prober
+    action: remove
+    types:
+    - vm
+
+  - packages:
+    - cloud-guest-utils
+    action: install
+    types:
+    - vm
+
+  - packages:
+    - linux-image-generic
+    - ubuntu-desktop-minimal
+    action: install
+    variants:
+    - desktop
+
+  repositories:
+  - name: sources.list
+    url: |-
+      deb http://archive.ubuntu.com/ubuntu {{ image.release }} main restricted universe multiverse
+      deb http://archive.ubuntu.com/ubuntu {{ image.release }}-updates main restricted universe multiverse
+      deb http://security.ubuntu.com/ubuntu {{ image.release }}-security main restricted universe multiverse
+    architectures:
+    - amd64
+    - i386
+
+  - name: sources.list
+    url: |-
+      deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }} main restricted universe multiverse
+      deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-updates main restricted universe multiverse
+      deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-security main restricted universe multiverse
+    architectures:
+    - armhf
+    - arm64
+    - powerpc
+    - powerpc64
+    - ppc64el
+  - name: neovim-ppa-ubuntu-unstable-impish.list
+    url: |-
+      deb http://ppa.launchpad.net/neovim-ppa/unstable/ubuntu/ focal main
+      # deb-src http://ppa.launchpad.net/neovim-ppa/unstable/ubuntu/ focal main
+    key: |
+      -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+      xsFNBFSJzaMBEACxpSOtdO1I0N1Ett33RszDCmK7erP77pcABb6c/7fHhkqoaOq0
+      EHSUnn2STQPopBtTuVY08waV2AWnGcB664pGTJ3r2c8CSBY21RweHbzyDqPG/gGw
+      jpJdrTPXlIUrTn7DI2y36sarn1cYel4dw+jdPnhtJ34xU6/EffS2532q9cHlGCmS
+      gwtmZ1cHvW2XjJj7UPpc7t2NnQ6NYNeRoKSVh2Xf8kvV74IKdkJFb62iTd7aNbCg
+      83m4dBA1nI6mC6KP+rmQHcDtN8tZc8cQlN0ho7U3CMtLPrCdhDFl+vXEj2EbQDIn
+      GTCi4pmQYirPf49i3CV3as6xGxshuxF9dbfa11/QgMcHrnO2mw4WzFrBW2iT6EDh
+      KlxVskPNZYZlU8eJr46KdCj01YfPkXtSqBHSjmlnnDSUu+WwT2j07gwO4lAnZCWE
+      2MXJaxi6y+0rijbH89uw8mXOq4Q04/9cvn4AFzRaCnB1PnLWOhoqtuXUvp4dCBK0
+      PEtfFQcSG7DL3tRQJIJ1nasVsy+6NJ5QUdexFxvZp7wYsEerrdZTEwn37vYL4oXa
+      hD3lzdNBfQgmdWcXysjjq8OcQj6EI4WT033q/QGkoueH2w45OWL8bORN1ALnJO9W
+      rwIfHpnfiAIc+GLSZgcrEJo+KQ38FcPhIkdLEMzqLt3U1z4iO5bnxeR1kwARAQAB
+      zSFMYXVuY2hwYWQgUFBBIGZvciBOZW92aW0gUFBBIFRlYW3CwXgEEwECACIFAlSJ
+      zaMCGwMGCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAAoJEFX5b8+CMbbdkmAP+gLR
+      icU+SOQ83Ay/xBpp49fWKTgJCzHYFM8jAdRH55U3/oExVaxvyqBNiOS08ytsPOdc
+      LO2Td2azWzA4VlhZHhyQqV/ASWK0vBceM2G7vjsTwS8R4X5vkIIt+ON/PJg/Xp2u
+      v+4AjsTsDbt5PQ+R4QXA1jEK1weOWd+Qm8xkEAGdR3Cw+fSeJ1+GBQRYc/X9r7i9
+      GkASOy+53Y3GtZwD9P7ctmTcCxlKFhJWCYuuWzKGj4FHWPvN4vcdRFcHyXsaXr51
+      CAk1y6B14rlviWHibjVXS0MTlKjfvIF3wR5z8abjl+H01Hwxmb1i+GtsMfhoRjh4
+      LS99TkiHa3T11ok0niJN8OOfe5kY/vwutFLzOBwOxqhMZVGKq5vCiKh9/aviOIfw
+      7Sbht1i2+0+EH6GHmidnaG1qUte0rhpOwJgyxSw5sFQjiOhnokn5YAOmsxQ9QCd+
+      aRWNGYUezEvX/+2JhLWZAewD2ACb1g2K5LzXt8p82MT3f2zONoXqK2H2SuSY/Vq/
+      LMyEoRc61o24lMuKDHL+JgTZfoNW/LB1nEehclY+gk0R2/B7F2ccEiU0fiYdcREP
+      KGLwRQBnDx3EI0EFTjZSeyj5kqovR0YtH52gVPEdDzPXOSqBmBo9CDdAyxUU45PM
+      2A81qlZxoFCBYDgBAXVqUdRfNikKWNiszh4RE4Q3
+      =IVmU
+      -----END PGP PUBLIC KEY BLOCK-----
+    architectures:
+    - amd64
+    - i386
+
+  - name: tailscale.list
+    url: deb https://pkgs.tailscale.com/stable/ubuntu focal main
+    key: |
+      -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+      mQINBF5UmbgBEADAA5mxC8EoWEf53RVdlhQJbNnQW7fctUA5yNcGUbGGGTk6XFqO
+      nlek0Us0FAl5KVBgcS0Bj+VSwKVI/wx91tnAWI36CHeMyPTawdT4FTcS2jZMHbcN
+      UMqM1mcGs3wEQmKz795lfy2cQdVktc886aAF8hy1GmZDSs2zcGMvq5KCNPuX3DD5
+      INPumZqRTjwSwlGptUZrJpKWH4KvuGr5PSy/NzC8uSCuhLbFJc1Q6dQGKlQxwh+q
+      AF4uQ1+bdy92GHiFsCMi7q43hiBg5J9r55M/skboXkNBlS6kFviP+PADHNZe5Vw0
+      0ERtD/HzYb3cH5YneZuYXvnJq2/XjaN6OwkQXuqQpusB5fhIyLXE5ZqNlwBzX71S
+      779tIyjShpPXf1HEVxNO8TdVncx/7Zx/FSdwUJm4PMYQmnwBIyKlYWlV2AGgfxFk
+      mt2VexyS5s4YA1POuyiwW0iH1Ppp9X14KtOfNimBa0yEzgW3CHTEg55MNZup6k2Q
+      mRGtRjeqM5cjrq/Ix15hISmgbZogPRkhz/tcalK38WWAR4h3N8eIoPasLr9i9OVe
+      8aqsyXefCrziaiJczA0kCqhoryUUtceMgvaHl+lIPwyW0XWwj+0q45qzjLvKet+V
+      Q8oKLT1nMr/whgeSJi99f/jE4sWIbHZ0wwR02ZCikKnS05arl3v+hiBKPQARAQAB
+      tERUYWlsc2NhbGUgSW5jLiAoUGFja2FnZSByZXBvc2l0b3J5IHNpZ25pbmcga2V5
+      KSA8aW5mb0B0YWlsc2NhbGUuY29tPokCTgQTAQgAOBYhBCWWqZ6qszghiTwKeUWM
+      qDKVf1hoBQJeVJm4AhsDBQsJCAcCBhUKCQgLAgQWAgMBAh4BAheAAAoJEEWMqDKV
+      f1hoWHEP/1DYd9WZrodyV5zy1izvj0FXtUReJi374gDn3cHrG6uYtXcE9HWZhxQD
+      6nDgYuey5sBhLvPQiE/sl5GYXNw/O95XVk8HS54BHCCYq1GeYkZaiCGLGFBA08JK
+      7PZItGsfdJHwHfhSMtGPS7Cpmylje9gh8ic56NAhC7c5tGTlD69Y8zGHjnRQC6Hg
+      wF34jdp8JTQpSctpmiOxOXN+eH8N59zb0k30CUym1Am438AR0PI6RBTnubBH+Xsc
+      eQhLJnmJ1bM6GP4agXw5T1G/qp95gjIddHXzOkEvrpVfJFCtp91VIlBwycspKYVp
+      1IKAdPM6CVf/YoDkawwm4y4OcmvNarA5dhWBG0Xqse4v1dlYbiHIFcDzXuMyrHYs
+      D2Wg8Hx8TD64uBHY0fp24nweCLnaZCckVUsnYjb0A494lgwveswbZeZ6JC5SbDKH
+      Tc2SE4jq+fsEEJsqsdHIC04d+pMXI95HinJHU1SLBTeKLvEF8Zuk7RTJyaUTjs7h
+      Ne+xWDmRjjR/D/GXBxNrM9mEq6Jvp/ilYTdWwAyrSmTdotHb+NWjAGpJWj5AZCH9
+      HeBr2mtVhvTu3KtCQmGpRiR18zMbmemRXUh+IX5hpWGzynhtnSt7vXOvhJdqqc1D
+      VennRMQZMb09wJjPcvLIApUMl69r29XmyB59NM3UggK/UCJrpYfmuQINBF5UmbgB
+      EADTSKKyeF3XWDxm3x67MOv1Zm3ocoe5xGDRApPkgqEMA+7/mjVlahNXqA8btmwM
+      z1BH5+trjOUoohFqhr9FPPLuKaS/pE7BBP38KzeA4KcTiEq5FQ4JzZAIRGyhsAr+
+      6bxcKV/tZirqOBQFC7bH2UAHH7uIKHDUbBIDFHjnmdIzJ5MBPMgqvSPZvcKWm40g
+      W+LWMGoSMH1Uxd+BvW74509eezL8p3ts42txVNvWMSKDkpiCRMBhfcf5c+YFXWbu
+      r5qus2mnVw0hIyYTUdRZIkOcYBalBjewVmGuSIISnUv76vHz133i0zh4JcXHUDqc
+      yLBUgVWckqci32ahy3jc4MdilPeAnjJQcpJVBtMUNTZ4KM7UxLmOa5hYwvooliFJ
+      wUFPB+1ZwN8d+Ly12gRKf8qA/iL8M5H4nQrML2dRJ8NKzP2U73Fw+n6S1ngrDX8k
+      TPhQBq4EDjDyX7SW3Liemj5BCuWJAo53/2cL9P9I5Nu3i2pLJOHzjBSXxWaMMmti
+      kopArlSMWMdsGgb0xYX+aSV7xW+tefYZJY1AFJ1x2ZgfIc+4zyuXnHYA2jVYLAfF
+      pApqwwn8JaTJWNhny/OtAss7XV/WuTEOMWXaTO9nyNmHla9KjxlBkDJG9sCcgYMg
+      aCAnoLRUABCWatxPly9ZlVbIPPzBAr8VN/TEUbceAH0nIwARAQABiQI2BBgBCAAg
+      FiEEJZapnqqzOCGJPAp5RYyoMpV/WGgFAl5UmbgCGwwACgkQRYyoMpV/WGji9w/8
+      Di9yLnnudvRnGLXGDDF2DbQUiwlNeJtHPHH4B9kKRKJDH1Rt5426Lw8vAumDpBlR
+      EeuT6/YQU+LSapWoDzNcmDLzoFP7RSQaB9aL/nJXv+VjlsVH/crpSTTgGDs8qGsL
+      O3Y2U1Gjo5uMBoOfXwS8o1VWO/5eUwS0KH7hpbOuZcf9U9l1VD2YpGfnMwX1rnre
+      INJqseQAUL3oyNl76gRzyuyQ4AIA06r40hZDgybH0ADN1JtfVk8z4ofo/GcfoXqm
+      hifWJa2SwwHeijhdN1T/kG0FZFHs1DBuBYJG3iJ3/bMeL15j1OjncIYIYccdoEUd
+      uHnp4+ZYj5kND0DFziTvOC4WyPpv3BlBVariPzEnEqnhjx5RYwMabtTXoYJwUkxX
+      2gAjKqh2tXissChdwDGRNASSDrChHLkQewx+SxT5kDaOhB84ZDnp+urn9A+clLkN
+      lZMsMQUObaRW68uybSbZSmIWFVM1GovRMgrPG3T6PAykQhFyE/kMFrv5KpPh7jDj
+      5JwzQkxLkFMcZDdS43VymKEggxqtM6scIRU55i059fLPAVXJG5in1WhMNsmt49lb
+      KqB6je3plIWOLSPuCJ/kR9xdFp7Qk88GCXEd0+4z/vFn4hoOr85NXFtxhS8k9GfJ
+      mM/ZfUq7YmHR+Rswe0zrrCwTDdePjGMo9cHpd39jCvc=
+      =AIVM
+      -----END PGP PUBLIC KEY BLOCK-----
+actions:
+- trigger: post-update
+  action: |-
+    #!/bin/sh
+    set -eux
+
+    # Create the ubuntu user account
+    getent group sudo >/dev/null 2>&1 || groupadd --system sudo
+    useradd --create-home -s /bin/bash -G sudo -U bjk
+  variants:
+  - default
+
+- trigger: post-files
+  action: |-
+    #!/bin/sh
+    set -eux
+    su bjk -c 'ssh-import-id gh:bketelsen'
+    cd /usr/local/bin && curl https://zyedidia.github.io/eget.sh | sh
+    ls -la /etc/provision/provision*
+    chmod +x /etc/provision/provision
+    find /etc/provision/provision.d/ -type f -exec chmod +x {} \;
+
+    su bjk -c /etc/provision/provision
+
+  variants:
+  - default
+- trigger: post-packages
+  action: |-
+    #!/bin/sh
+    set -eux
+
+    # Enable systemd-networkd
+    systemctl enable systemd-networkd
+  releases:
+  - bionic
+  - focal
+  - hirsute
+  - impish
+
+- trigger: post-packages
+  action: |-
+    #!/bin/sh
+    set -eux
+
+    # Make sure the locale is built and functional
+    locale-gen en_US.UTF-8
+    update-locale LANG=en_US.UTF-8
+
+    # Cleanup underlying /run
+    mount -o bind / /mnt
+    rm -rf /mnt/run/*
+    umount /mnt
+
+    # Cleanup temporary shadow paths
+    rm /etc/*-
+
+- trigger: post-files
+  action: |-
+    #!/bin/sh
+    set -eux
+
+    TARGET="x86_64"
+    [ "$(uname -m)" = "aarch64" ] && TARGET="arm64"
+
+    update-grub
+    grub-install --uefi-secure-boot --target="${TARGET}-efi" --no-nvram --removable
+    update-grub
+    sed -i "s#root=[^ ]*#root=/dev/sda2#g" /boot/grub/grub.cfg
+  types:
+  - vm
+
+- trigger: post-files
+  action: |-
+    #!/bin/sh
+    set -eux
+
+    mv /etc/sshkeys/id_rsa /home/bjk/.ssh/
+    mv /etc/sshkeys/id_rsa.pub /home/bjk/.ssh/
+  types:
+  - vm
+  - default
+
+- trigger: post-packages
+  action: |-
+    #!/bin/sh
+    set -eux
+
+    # Timezone
+    rm -f /etc/localtime
+    ln -s /usr/share/zoneinfo/UTC /etc/localtime
+    echo UTC > /etc/timezone
+
+    # Locale
+    echo en_US.UTF-8 UTF-8 > /etc/locale.gen
+    locale-gen
+    echo LANG=en_US.UTF-8 > /etc/locale.conf
+
+    # User
+    USERNAME="ubuntu"
+    useradd ${USERNAME} -s /bin/bash -m -U -G adm,video,users
+    echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/${USERNAME}
+    chmod 600 /etc/sudoers.d/${USERNAME}
+
+    (
+    cat << EOF
+    [daemon]
+    AutomaticLogin=${USERNAME}
+    AutomaticLoginEnable=true
+    EOF
+    ) > /etc/gdm3/custom.conf
+
+    # Automatic disk resize
+    (
+    cat << EOF
+    [Unit]
+    Description=LXD - grow root partition
+
+    [Service]
+    Type=oneshot
+    ExecStartPre=-/usr/bin/growpart /dev/sda 2
+    ExecStart=/usr/sbin/resize2fs /dev/sda2
+
+    [Install]
+    WantedBy=default.target
+    EOF
+    ) > /etc/systemd/system/lxd-growpart.service
+    systemctl enable lxd-growpart
+  variants:
+  - desktop
+
+- trigger: post-packages
+  action: |-
+    #!/bin/sh
+    set -eux
+    # auto join tailscale network
+    (
+    cat << EOF
+    [Unit]
+    Description=Tailscale Join
+
+    [Service]
+    Type=oneshot
+    ExecStart=/usr/bin/tailscale up --authkey=file:/etc/tailscale/pat
+
+    [Install]
+    WantedBy=default.target
+    EOF
+    ) > /etc/systemd/system/join-tailscale.service
+  variants:
+  - default
+  - vm
+mappings:
+  architecture_map: debian

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	{{ template "ComponentMeta" .CMeta }}
+	{{ meta . }}
+	{{ dynamics }}
+
+</head>
+
+<body class="text-blueGray-700 antialiased">
+	<noscript>You need to enable JavaScript to run this app.</noscript>
+	<div id="root">
+		{{ template "ComponentNav" .Nav }}
+
+		<div class="relative md:ml-64 bg-blueGray-50">
+			{{ template "ComponentTopNav" .TopNav }}
+
+
+
+			{{ template "ComponentHeader" .Header }}
+
+			<div class="px-4 md:px-10 mx-auto w-full -m-24">
+				<div class="flex flex-wrap mt-4">
+					{{ template "ComponentMain" .Main }}
+
+				</div>
+				{{ template "ComponentFooter" .Footer }}
+
+			</div>
+		</div>
+	</div>
+	<script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.js"></script>
+	<script type="text/javascript">
+		/* Make dynamic date appear */
+		(function () {
+			if (document.getElementById("get-current-year")) {
+				document.getElementById(
+					"get-current-year"
+				).innerHTML = new Date().getFullYear();
+			}
+		})();
+		/* Sidebar - Side navigation menu on mobile/responsive mode */
+		function toggleNavbar(collapseID) {
+			document.getElementById(collapseID).classList.toggle("hidden");
+			document.getElementById(collapseID).classList.toggle("bg-white");
+			document.getElementById(collapseID).classList.toggle("m-2");
+			document.getElementById(collapseID).classList.toggle("py-3");
+			document.getElementById(collapseID).classList.toggle("px-6");
+		}
+		/* Function for dropdowns */
+		function openDropdown(event, dropdownID) {
+			let element = event.target;
+			while (element.nodeName !== "A") {
+				element = element.parentNode;
+			}
+			Popper.createPopper(element, document.getElementById(dropdownID), {
+				placement: "bottom-start",
+			});
+			document.getElementById(dropdownID).classList.toggle("hidden");
+			document.getElementById(dropdownID).classList.toggle("block");
+		}
+
+	</script>
+
+</body>
+
+</html>

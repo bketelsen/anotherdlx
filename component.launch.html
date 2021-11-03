@@ -1,0 +1,16 @@
+{{ define "ComponentLaunch" }}
+<form {{ componentattrs . }} action="/" method="POST" onsubmit="{{ formsubmit }}" class="bg-gray-100 rounded p-4">
+	<div class="text-2xl font-semibold">Create New Container</div>
+	<div class="mt-4">
+		<input name="Name" value="{{ .Name }}" type="text" placeholder="Container Name"
+			class="w-full border shadow rounded px-2 py-1 outline-none text-lg">
+
+		<input name="Repo" value="{{ .Repo }}" type="text" placeholder="Optional Repo"
+			class="w-full border shadow rounded px-2 py-1 outline-none text-lg">
+		<div class="mt-3 flex justify-center">
+			<button type="submit"
+				class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create</button>
+		</div>
+	</div>
+</form>
+{{ end }}

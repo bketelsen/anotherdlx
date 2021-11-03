@@ -1,0 +1,8 @@
+static/node_modules
+static/dist
+tailscalekey
+id_rsa.pub
+id_rsa
+/notus-js-main
+/originals
+/bin

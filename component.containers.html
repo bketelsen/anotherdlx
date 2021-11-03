@@ -1,0 +1,99 @@
+{{ define "ComponentContainers" }}
+
+<div {{ componentattrs .}} class="w-full mb-12 px-4">
+	<div class="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded bg-white">
+		<div class="rounded-t mb-0 px-4 py-3 border-0">
+			<div class="flex flex-wrap items-center">
+				<div class="relative w-full px-4 max-w-full flex-grow flex-1">
+					<h3 class="font-semibold text-lg text-blueGray-700">
+						Container Instances
+					</h3>
+					<a href="/launch">
+						<button
+							class="inline-block px-4 py-3 text-sm font-semibold text-center text-white uppercase transition duration-200 ease-in-out bg-green-500 rounded-md cursor-pointer hover:bg-green-600">
+							New Container
+						</button>
+					</a>
+				</div>
+			</div>
+		</div>
+		<div class="block w-full overflow-x-auto">
+			<!-- Projects table -->
+			<table class="items-center w-full bg-transparent border-collapse">
+				<thead>
+					<tr>
+						<th
+							class="px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left bg-blueGray-50 text-blueGray-500 border-blueGray-100">
+							Name
+						</th>
+						<th
+							class="px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left bg-blueGray-50 text-blueGray-500 border-blueGray-100">
+							Addresses
+						</th>
+						<th
+							class="px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left bg-blueGray-50 text-blueGray-500 border-blueGray-100">
+							Status
+						</th>
+						<th
+							class="px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left bg-blueGray-50 text-blueGray-500 border-blueGray-100">
+							Usage
+						</th>
+						<th
+							class="px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left bg-blueGray-50 text-blueGray-500 border-blueGray-100">
+							Actions
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					{{ range .Instances }}
+					<tr>
+						<th
+							class="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left flex items-center">
+							<img src="/static/assets/img/bootstrap.jpg" class="h-12 w-12 bg-white rounded-full border"
+								alt="..." />
+							<span class="ml-3 font-bold text-blueGray-600">
+								{{ .Name }}
+							</span>
+						</th>
+						<td class="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+							{{ range .CleanIPAddresses }}
+							<a href="vscode://vscode-remote/ssh-remote+{{ . }}/home/bjk/projects">{{ . }}</a><br />
+							{{ end }}
+						</td>
+						<td class="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+							{{ if eq .Status "Running" }}
+							<i class="fas fa-circle text-green-500 mr-2"></i>
+							{{ else if eq .Status "Stopped" }}
+							<i class="fas fa-circle text-red-500 mr-2"></i>
+							{{ end }}
+							{{ .Status}}
+						</td>
+						<td class="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+
+							{{ if eq .Status "Running" }}
+							MEM: {{ .State.Memory.Usage }} Bytes <br />
+							PROCESSES: {{ .State.Processes }} <br />
+							{{ end }}
+
+						</td>
+						<td class="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+
+
+							{{ if eq .Status "Running" }}
+							<i class="fas fa-stop text-black-500 mr-2 cursor-pointer" alt="stop"
+								onclick='{{ action "Stop" .Name }}'></i>
+							{{ else }}
+							<i class="fas fa-play text-green-500 mr-2 cursor-pointer" alt="start"
+								onclick='{{ action "Start" .Name }}'></i>
+							<i class="fas fa-trash text-gray-500 mr-2 cursor-pointer" alt="delete"
+								onclick='{{ action "Delete" .Name }}'></i>
+							{{ end }}
+						</td>
+					</tr>
+					{{ end }}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+{{ end }}

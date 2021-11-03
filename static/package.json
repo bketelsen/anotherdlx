@@ -1,0 +1,28 @@
+{
+  "name": "subscrd",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build:tailwind && npm run build:fontawesome && npm run build:img && npm run build:img2 && npm run build:meta && npm run build:js",
+    "build:img": "rm -rf dist/img && mkdir -p dist/img && cp -r img/* dist/img/",
+    "build:img2": "rm -rf dist/assets/img && mkdir -p dist/assets/img && cp -r assets/img/* dist/assets/img/",
+    "build:meta": "rm -rf dist/meta && mkdir -p dist/meta && cp -r meta/* dist/meta/",
+    "build:js": "rm -rf dist/js && mkdir -p dist/js && cp -r js/* dist/js/",
+
+    "build:tailwind": "tailwind build assets/styles/index.css -o dist/assets/styles/tailwind.min.css",
+    "build:fontawesome": "mkdir -p dist/assets/vendor/@fortawesome/fontawesome-free/webfonts && mkdir -p dist/assets/vendor/@fortawesome/fontawesome-free/css && cp -a ./node_modules/@fortawesome/fontawesome-free/webfonts dist/assets/vendor/@fortawesome/fontawesome-free/ && cp ./node_modules/@fortawesome/fontawesome-free/css/all.min.css dist/assets/vendor/@fortawesome/fontawesome-free/css/all.min.css",
+    "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && npm run build:tailwind && npm run build:fontawesome"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tailwindcss": "^2.2.7",
+    "@fortawesome/fontawesome-free": "5.15.3",
+    "@tailwindcss/forms": "0.2.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.3.1",
+    "postcss": "^8.3.6"
+  }
+}

@@ -1,0 +1,46 @@
+{{ define "ComponentOperation" }}
+
+<div {{ componentattrs . }} id='operationdiv' class="w-full mb-12 px-4">
+	<div class="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded bg-white">
+		<div class="rounded-t mb-0 px-4 py-3 border-0">
+			<div class="flex flex-wrap items-center">
+				<div class="relative w-full px-4 max-w-full flex-grow flex-1">
+					<h3 class="font-semibold text-lg text-blueGray-700">
+						Operation Status
+					</h3>
+				</div>
+			</div>
+		</div>
+		<div id='statusdiv' class="block w-full overflow-x-auto">
+
+			<div class="flex flex-wrap items-center">
+				<div class="relative w-full px-4 max-w-full flex-grow flex-1">
+					<h3 id='statusheader' class="font-semibold text-lg text-red-700">
+						{{ .Status }}
+					</h3>
+					<div id='statuslog' class="py-3 text-md font-semibold text-left">
+						{{ range .Logs }}
+						{{ . }}<br />
+						{{ end }}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+
+	setInterval(myTimer, 1000);
+	setTimeout(clearTimer, 6000);
+
+	function myTimer() {
+		statusdiv = document.getElementById('operationdiv');
+		Action(statusdiv, 'Status');
+	}
+	function clearTimer() {
+		clearInterval(myTimer);
+	}
+
+</script>
+
+{{ end }}

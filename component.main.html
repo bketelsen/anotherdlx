@@ -1,0 +1,23 @@
+{{ define "ComponentMain" }}
+
+<div class="w-full mb-12 px-4">
+	<div class="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded bg-white">
+		<div class="rounded-t mb-0 px-4 py-3 border-0">
+			<div class="flex flex-wrap items-center">
+				<div class="relative w-full px-4 max-w-full flex-grow flex-1">
+					<h3 class="font-semibold text-lg text-blueGray-700">
+						Container Instances
+					</h3>
+					<a href="/launch">
+						<button
+							class="inline-block px-4 py-3 text-sm font-semibold text-center text-white uppercase transition duration-200 ease-in-out bg-green-500 rounded-md cursor-pointer hover:bg-green-600">
+							New Container
+						</button>
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+{{ end }}
