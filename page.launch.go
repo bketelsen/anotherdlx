@@ -23,6 +23,7 @@ type PageLaunch struct {
 	TopNav             kyoto.Component
 	Launch             kyoto.Component
 	DemoEmailValidator kyoto.Component
+	Header             kyoto.Component
 }
 
 func (p *PageLaunch) Template() *template.Template {
@@ -53,6 +54,8 @@ func (p *PageLaunch) Init() {
 
 	p.CMeta = kyoto.RegC(p, &ComponentMeta{})
 	p.TopNav = kyoto.RegC(p, &ComponentTopNav{})
+	p.Header = kyoto.RegC(p, &ComponentHeader{})
+
 	p.Launch = kyoto.RegC(p, &ComponentLaunch{})
 
 	p.Nav = kyoto.RegC(p, &ComponentNav{

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"sort"
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bketelsen/localspaces/operations"
 	lxd "github.com/lxc/lxd/client"
@@ -21,8 +21,11 @@ type InstanceDetail struct {
 }
 
 type ComponentContainers struct {
-	Page      kyoto.Page `json:"-"`
-	Instances []InstanceDetail
+	Page        kyoto.Page `json:"-"`
+	Instances   []InstanceDetail
+	OperationID int64
+	Status      operations.Status
+	Logs        []string
 }
 
 func (c *ComponentContainers) Init(p kyoto.Page) {
@@ -30,14 +33,31 @@ func (c *ComponentContainers) Init(p kyoto.Page) {
 }
 
 func (c *ComponentContainers) Async(p kyoto.Page) error {
-	server := kyoto.GetContext(p, "server").(lxd.InstanceServer)
+	err := c.getInstances()
+	if err != nil {
+		return err
+	}
+	if c.OperationID != 0 {
+		var err error
+		c.Status, err = operations.GetStatus(c.OperationID)
+		return err
+	}
+	return nil
+}
+
+func (c *ComponentContainers) getInstances() error {
+	server, err := lxd.ConnectLXDUnix("", nil)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
 
 	instances, err := server.GetInstancesFull(api.InstanceTypeAny)
 	if err != nil {
 
 		return err
 	}
-	//c.Instances = instances
+	c.Instances = []InstanceDetail{}
 
 	for _, instance := range instances {
 		i := InstanceDetail{}
@@ -95,12 +115,48 @@ func (c *ComponentContainers) Actions() kyoto.ActionMap {
 				log.Println("Error submitting start", err)
 			}
 			log.Println("Submitted Job:", id)
-			kyoto.Redirect(&kyoto.RedirectParameters{
-				Page:              c.Page,
-				ResponseWriterKey: "internal:rw",
-				RequestKey:        "internal:r",
-				Target:            "/operation?id=" + strconv.FormatInt(id, 10),
-			})
+			c.OperationID = id
+			c.Status, err = operations.GetStatus(c.OperationID)
+			if err != nil {
+				log.Println("Error getting status", err)
+				c.Logs = append(c.Logs, "Error getting status")
+				c.Logs = append(c.Logs, err.Error())
+			}
+			c.Logs, _ = operations.GetLogs(c.OperationID)
+			if err != nil {
+				log.Println("Error getting operation logs", err)
+				c.Logs = append(c.Logs, "Error getting operation logs")
+				c.Logs = append(c.Logs, err.Error())
+			}
+			kyoto.SSAFlush(c.Page, c)
+			for {
+				c.Status, err = operations.GetStatus(c.OperationID)
+				if err != nil {
+					log.Println("Error getting status", err)
+					c.Logs = append(c.Logs, "Error getting status")
+					c.Logs = append(c.Logs, err.Error())
+				}
+				c.Logs, _ = operations.GetLogs(c.OperationID)
+				if err != nil {
+					log.Println("Error getting operation logs", err)
+					c.Logs = append(c.Logs, "Error getting operation logs")
+					c.Logs = append(c.Logs, err.Error())
+				}
+				kyoto.SSAFlush(c.Page, c)
+
+				if c.Status == operations.StatusRunning {
+					time.Sleep(time.Second)
+				} else {
+					break
+				}
+
+			}
+			err = c.getInstances()
+			if err != nil {
+				log.Println(err)
+			}
+			kyoto.SSAFlush(c.Page, c)
+
 		},
 
 		"Stop": func(args ...interface{}) {
@@ -113,13 +169,49 @@ func (c *ComponentContainers) Actions() kyoto.ActionMap {
 			if err != nil {
 				log.Println("Error submitting stop", err)
 			}
+
 			log.Println("Submitted Job:", id)
-			kyoto.Redirect(&kyoto.RedirectParameters{
-				Page:              c.Page,
-				ResponseWriterKey: "internal:rw",
-				RequestKey:        "internal:r",
-				Target:            "/operation?id=" + strconv.FormatInt(id, 10),
-			})
+			c.OperationID = id
+			c.Status, err = operations.GetStatus(c.OperationID)
+			if err != nil {
+				log.Println("Error getting status", err)
+				c.Logs = append(c.Logs, "Error getting status")
+				c.Logs = append(c.Logs, err.Error())
+			}
+			c.Logs, _ = operations.GetLogs(c.OperationID)
+			if err != nil {
+				log.Println("Error getting operation logs", err)
+				c.Logs = append(c.Logs, "Error getting operation logs")
+				c.Logs = append(c.Logs, err.Error())
+			}
+			kyoto.SSAFlush(c.Page, c)
+			for {
+				c.Status, err = operations.GetStatus(c.OperationID)
+				if err != nil {
+					log.Println("Error getting status", err)
+					c.Logs = append(c.Logs, "Error getting status")
+					c.Logs = append(c.Logs, err.Error())
+				}
+				c.Logs, _ = operations.GetLogs(c.OperationID)
+				if err != nil {
+					log.Println("Error getting operation logs", err)
+					c.Logs = append(c.Logs, "Error getting operation logs")
+					c.Logs = append(c.Logs, err.Error())
+				}
+				kyoto.SSAFlush(c.Page, c)
+
+				if c.Status == operations.StatusRunning {
+					time.Sleep(time.Second)
+				} else {
+					break
+				}
+
+			}
+			err = c.getInstances()
+			if err != nil {
+				log.Println(err)
+			}
+			kyoto.SSAFlush(c.Page, c)
 		},
 
 		"Delete": func(args ...interface{}) {
@@ -131,13 +223,49 @@ func (c *ComponentContainers) Actions() kyoto.ActionMap {
 			if err != nil {
 				log.Println("Error submitting delete", err)
 			}
+
 			log.Println("Submitted Job:", id)
-			kyoto.Redirect(&kyoto.RedirectParameters{
-				Page:              c.Page,
-				ResponseWriterKey: "internal:rw",
-				RequestKey:        "internal:r",
-				Target:            "/operation?id=" + strconv.FormatInt(id, 10),
-			})
+			c.OperationID = id
+			c.Status, err = operations.GetStatus(c.OperationID)
+			if err != nil {
+				log.Println("Error getting status", err)
+				c.Logs = append(c.Logs, "Error getting status")
+				c.Logs = append(c.Logs, err.Error())
+			}
+			c.Logs, _ = operations.GetLogs(c.OperationID)
+			if err != nil {
+				log.Println("Error getting operation logs", err)
+				c.Logs = append(c.Logs, "Error getting operation logs")
+				c.Logs = append(c.Logs, err.Error())
+			}
+			kyoto.SSAFlush(c.Page, c)
+			for {
+				c.Status, err = operations.GetStatus(c.OperationID)
+				if err != nil {
+					log.Println("Error getting status", err)
+					c.Logs = append(c.Logs, "Error getting status")
+					c.Logs = append(c.Logs, err.Error())
+				}
+				c.Logs, _ = operations.GetLogs(c.OperationID)
+				if err != nil {
+					log.Println("Error getting operation logs", err)
+					c.Logs = append(c.Logs, "Error getting operation logs")
+					c.Logs = append(c.Logs, err.Error())
+				}
+				kyoto.SSAFlush(c.Page, c)
+
+				if c.Status == operations.StatusRunning {
+					time.Sleep(time.Second)
+				} else {
+					break
+				}
+
+			}
+			err = c.getInstances()
+			if err != nil {
+				log.Println(err)
+			}
+			kyoto.SSAFlush(c.Page, c)
 		},
 	}
 }

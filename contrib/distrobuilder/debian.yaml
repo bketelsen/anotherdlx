@@ -982,11 +982,8 @@ actions:
     cd /usr/local/bin && curl https://zyedidia.github.io/eget.sh | sh
     cd /opt/provision/script-library && /bin/bash ./github-debian.sh
     cd /opt/provision/script-library && /bin/bash ./go-debian.sh
-    usermod -aG golang ${MYUSER}
     cd /opt/provision/script-library && /bin/bash ./rust-debian.sh
-    usermod -a -G rustlang "${MYUSER}"
     cd /opt/provision/script-library && /bin/bash ./node-debian.sh
-    usermod -a -G nvm "${MYUSER}"
     cd /opt/provision/script-library && /bin/bash ./github-debian.sh
 
     cd /opt/provision/script-library && /bin/bash ./common-debian.sh true ${MYUSER} 1000 1000 true true true

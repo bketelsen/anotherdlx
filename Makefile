@@ -8,6 +8,9 @@ build: static
 static: staticsetup
 	cd static && npm run build
 
+run: build
+	bin/dlux
+
 staticsetup:
 	cd static && npm ci
 
