@@ -29,7 +29,6 @@ func main() {
 
 	mux.HandleFunc("/containers", kyoto.PageHandler(&PageContainers{}))
 	mux.HandleFunc("/launch", kyoto.PageHandler(&PageLaunch{}))
-	mux.HandleFunc("/operation", kyoto.PageHandler(&PageOperation{}))
 	// SSA plugin
 	mux.HandleFunc("/SSA/", kyoto.SSAHandler(ssatemplate))
 	// Run
